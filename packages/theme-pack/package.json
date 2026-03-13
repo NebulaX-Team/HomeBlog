@@ -1,0 +1,7 @@
+{
+  "name": "@homeblog/theme-pack",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["theme.json", "tokens.css", "theme.css", "assets"],
+  "main": "theme.json"
+}

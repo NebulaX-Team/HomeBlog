@@ -1,0 +1,25 @@
+{
+  "name": "@homeblog/web",
+  "private": true,
+  "scripts": {
+    "predev": "node ../../scripts/load-theme.mjs",
+    "dev": "next dev",
+    "prebuild": "node ../../scripts/load-theme.mjs",
+    "build": "next build",
+    "start": "next start",
+    "prelint": "node ../../scripts/load-theme.mjs",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@homeblog/ui": "file:../../packages/ui",
+    "@homeblog/rich-text-renderer": "file:../../packages/rich-text-renderer",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.536.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "25.4.0"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules
+.next
+.turbo
+dist
+.DS_Store
+.env
+.env.local
+*.log
+.data
+docs
+packages/rich-text-renderer/dist
+packages/ui/dist

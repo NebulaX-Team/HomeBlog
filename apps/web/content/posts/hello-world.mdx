@@ -1,0 +1,41 @@
+---
+title: Hello HomeBlog
+date: 2026-03-12
+summary: 第一篇示例文章，验证 MDX/KaTeX/Mermaid/CodeBlock 渲染。
+tags:
+  - homeblog
+  - mdx
+---
+
+欢迎来到 **HomeBlog**。
+
+:::note
+这是一个 Callout 示例。
+:::
+
+## Code Block
+
+```ts
+export function sum(a: number, b: number) {
+  return a + b;
+}
+```
+
+## KaTeX
+
+行内公式 $E=mc^2$，块级公式：
+
+$$
+\int_0^1 x^2 \, dx = \frac{1}{3}
+$$
+
+## Mermaid
+
+```mermaid
+flowchart TD
+  A[Start] --> B{Decision}
+  B -->|Yes| C[Do something]
+  B -->|No| D[Do other]
+  C --> E[End]
+  D --> E[End]
+```

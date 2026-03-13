@@ -1,0 +1,106 @@
+@import "katex/dist/katex.min.css";
+
+:root {
+  --rt-border: #e6e6e6;
+  --rt-muted: #666666;
+  --rt-code-bg: #f6f8fa;
+  --rt-callout-bg: #f8f8f8;
+  --rt-callout-border: #d8d8d8;
+}
+
+.rt-codeblock {
+  border: 1px solid var(--rt-border);
+  border-radius: 10px;
+  background: var(--rt-code-bg);
+  overflow: hidden;
+}
+
+.rt-codeblock__toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rt-border);
+  font-size: 12px;
+  color: var(--rt-muted);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.rt-codeblock__lang {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rt-codeblock__copy {
+  border: 1px solid var(--rt-border);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.rt-codeblock pre {
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+}
+
+.rt-callout {
+  border: 1px solid var(--rt-callout-border);
+  border-radius: 12px;
+  background: var(--rt-callout-bg);
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.rt-callout__title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.rt-callout--warning {
+  --rt-callout-bg: #fff7e6;
+  --rt-callout-border: #f2c889;
+}
+
+.rt-callout--tip {
+  --rt-callout-bg: #f1fff4;
+  --rt-callout-border: #9bd5a6;
+}
+
+.rt-callout--info {
+  --rt-callout-bg: #eef6ff;
+  --rt-callout-border: #9dbfea;
+}
+
+.rt-mermaid {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid var(--rt-border);
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.rt-mermaid > div {
+  width: 100%;
+}
+
+.rt-mermaid svg {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+}
+
+.rt-mermaid .node rect,
+.rt-mermaid .node polygon,
+.rt-mermaid .node circle {
+  stroke-width: 1.5px;
+}
+
+.rt-mermaid .label {
+  font-weight: 500;
+}
