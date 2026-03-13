@@ -15,6 +15,10 @@ export type { SelectOption, SelectProps } from './Select';
 export { Textarea } from './Textarea';
 export type { TextareaProps } from './Textarea';
 
+export { BackLink } from './BackLink';
+export { PageNav } from './PageNav';
+export type { PageNavItem, PageNavProps } from './PageNav';
+
 export { QuoteCard } from './QuoteCard';
 export { TimeCard } from './TimeCard';
 export { ThemeToggle } from './ThemeToggle';

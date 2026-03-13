@@ -24,9 +24,10 @@ export function Mermaid({ code, className }: MermaidProps) {
         const getVar = (name: string, fallback: string) =>
           styles.getPropertyValue(name).trim() || fallback;
         const text = getVar('--color-text', '#111111');
-        const border = getVar('--color-border', '#d8d8d8');
-        const primary = getVar('--color-primary', '#2f2f2f');
+        const muted = getVar('--color-muted', '#6e6e6e');
         const bg = getVar('--color-bg', '#ffffff');
+        const card = getVar('--color-card', '#ffffff');
+        const cardMuted = getVar('--color-card-muted', '#f6f6f6');
         const font = getVar('--font-sans', 'system-ui, sans-serif');
 
         mermaid.initialize({
@@ -40,12 +41,12 @@ export function Mermaid({ code, className }: MermaidProps) {
           themeVariables: {
             fontFamily: font,
             fontSize: '14px',
-            primaryColor: bg,
+            primaryColor: cardMuted,
             primaryTextColor: text,
-            primaryBorderColor: primary,
-            lineColor: border,
-            secondaryColor: bg,
-            tertiaryColor: '#f7f7f7'
+            primaryBorderColor: muted,
+            lineColor: muted,
+            secondaryColor: card,
+            tertiaryColor: bg
           }
         });
         const result = await mermaid.render(id, code);

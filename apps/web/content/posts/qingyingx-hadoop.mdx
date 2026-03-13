@@ -1,0 +1,436 @@
+---
+title: Hadoop 搭建教程
+date: 2025-04-01
+summary: "QingYingX - Hadoop"
+tags:
+  - Apache
+  - Hadoop
+---
+
+# Hadoop集群完整搭建教程
+
+## 1. 系统环境准备
+
+### 1.1 配置SSH免密登录
+```bash
+# 生成SSH密钥（所有节点执行）
+ssh-keygen -t rsa
+# 将公钥复制到所有节点（包括自己）
+ssh-copy-id master
+ssh-copy-id slave1
+ssh-copy-id slave2
+```
+
+### 1.2 配置/etc/hosts文件
+```bash
+# 在所有节点上执行，添加到/etc/hosts文件末尾
+echo "192.168.1.100 master" >> /etc/hosts
+echo "192.168.1.101 slave1" >> /etc/hosts
+echo "192.168.1.102 slave2" >> /etc/hosts
+```
+
+### 1.3 关闭防火墙
+```bash
+# CentOS 7+
+systemctl stop firewalld
+systemctl disable firewalld
+```
+
+### 1.4 关闭SELinux
+```bash
+# 临时关闭
+setenforce 0
+
+# 永久关闭
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+```
+
+### 1.5 配置永久主机名
+```bash
+# 在master节点执行
+hostnamectl set-hostname master
+
+# 在slave1节点执行
+hostnamectl set-hostname slave1
+
+# 在slave2节点执行
+hostnamectl set-hostname slave2
+
+# 重启所有节点使更改生效
+reboot
+```
+
+## 2. Java环境配置
+
+### 2.1 安装JDK
+```bash
+# 解压到/root/software目录
+tar -zxvf jdk-8u401-linux-x64.tar.gz -C /root/software
+mv /root/software/jdk1.8.0_281 /root/software/jdk8
+```
+
+### 2.2 配置Java环境变量
+```bash
+# 编辑/etc/profile文件
+vim /etc/profile
+
+# 添加以下内容到文件末尾
+export JAVA_HOME=/root/software/jdk8
+export PATH=$JAVA_HOME/bin:$PATH
+
+# 使配置生效
+source /etc/profile
+
+# 验证安装
+java -version
+```
+
+## 3. Hadoop安装与配置
+
+### 3.1 下载并解压Hadoop
+```bash
+# 解压到/root/software目录
+tar -zxvf hadoop-3.1.3.tar.gz -C /root/software
+mv /root/software/hadoop-3.1.3 /root/software/hadoop
+```
+
+### 3.2 配置Hadoop环境变量
+```bash
+# 编辑/etc/profile文件
+vim /etc/profile
+
+# 添加以下内容到文件末尾
+export HADOOP_HOME=/root/software/hadoop
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+# 使配置生效
+source /etc/profile
+```
+
+### 3.3 创建Hadoop数据目录
+```bash
+mkdir -p /opt/dfs/{tmp,name,data}
+```
+
+### 3.4 配置Hadoop文件
+
+#### 3.4.1 配置hadoop-env.sh
+```bash
+cd $HADOOP_HOME/etc/hadoop
+vim hadoop-env.sh
+
+# 修改以下内容
+export JAVA_HOME=/root/software/jdk8
+export HADOOP_HOME=/root/software/hadoop
+export HDFS_DATANODE_USER=root
+export HDFS_NAMENODE_USER=root
+export HDFS_SECONDARYNAMENODE_USER=root
+export YARN_RESOURCEMANAGER_USER=root
+export YARN_NODEMANAGER_USER=root
+```
+
+#### 3.4.2 配置core-site.xml
+```xml
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://master:9000</value>
+    </property>
+    <property>
+        <name>io.file.buffer.size</name>
+        <value>131072</value>
+    </property>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/opt/dfs/tmp</value>
+    </property>
+    <property>
+        <name>hadoop.http.staticuser.user</name>
+        <value>root</value>
+    </property>
+    <property>
+        <name>dfs.permissions.enabled</name>
+        <value>false</value>
+    </property>
+</configuration>
+```
+
+#### 3.4.3 配置hdfs-site.xml
+```xml
+<configuration>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>file:/opt/dfs/name</value>
+    </property>
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>file:/opt/dfs/data</value>
+    </property>
+    <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+    </property>
+    <property>
+        <name>dfs.namenode.http-address</name>
+        <value>master:50070</value>
+    </property>
+    <property>
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>master:50090</value>
+    </property>
+</configuration>
+```
+
+#### 3.4.4 配置mapred-site.xml
+```xml
+<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>master:10020</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>master:19888</value>
+    </property>
+</configuration>
+```
+
+#### 3.4.5 配置yarn-site.xml
+```xml
+<configuration>
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>master</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.address</name>
+        <value>master:8030</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.resource-tracker.address</name>
+        <value>master:8031</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.address</name>
+        <value>master:8032</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.admin.address</name>
+        <value>master:8033</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.webapp.address</name>
+        <value>master:8088</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
+        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.resource.memory-mb</name>
+        <value>4096</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+    </property>
+</configuration>
+```
+
+#### 3.4.6 配置workers文件
+```bash
+vim workers
+
+# 添加以下内容（每行一个节点）
+master
+slave1
+slave2
+```
+
+### 3.5 分发配置到所有节点
+```bash
+# 在master节点执行
+scp -r /root/software/hadoop slave1:/root/software/
+scp -r /root/software/hadoop slave2:/root/software/
+scp -r /root/software/jdk8 slave1:/root/software/
+scp -r /root/software/jdk8 slave2:/root/software/
+scp /etc/profile slave1:/etc/
+scp /etc/profile slave2:/etc/
+```
+
+### 3.6 配置启动脚本
+```bash
+# 在master节点配置start-dfs.sh
+vim $HADOOP_HOME/sbin/start-dfs.sh
+
+# 在文件开头添加（stop-dfs.sh也做同样修改）
+HDFS_DATANODE_USER=root
+HDFS_NAMENODE_USER=root
+HDFS_SECONDARYNAMENODE_USER=root
+
+# 配置start-yarn.sh
+vim $HADOOP_HOME/sbin/start-yarn.sh
+
+# 在文件开头添加（stop-yarn.sh也做同样修改）
+YARN_RESOURCEMANAGER_USER=root
+YARN_NODEMANAGER_USER=root
+```
+
+## 4. 集群初始化与启动
+
+### 4.1 格式化HDFS
+```bash
+# 在master节点执行
+hdfs namenode -format
+```
+
+### 4.2 启动HDFS
+```bash
+# 在master节点执行
+start-dfs.sh
+
+# 验证启动
+jps
+# 应该看到：NameNode、SecondaryNameNode、DataNode
+```
+
+### 4.3 启动YARN
+```bash
+# 在master节点执行
+start-yarn.sh
+
+# 验证启动
+jps
+# 应该看到：ResourceManager、NodeManager
+```
+
+### 4.4 解决resourcemanager启动问题
+如果使用`start-all.sh`不能启动resourcemanager，可以单独启动：
+```bash
+yarn --daemon start resourcemanager
+```
+
+## 5. 集群验证与管理
+
+### 5.1 查看集群状态
+```bash
+# 查看HDFS状态
+hdfs dfsadmin -report
+
+# 查看DataNode存活情况
+hadoop dfsadmin -report
+```
+
+### 5.2 解决Web界面问题
+
+#### SecondaryNameNode页面显示不完全
+```bash
+# 修改Hadoop 3.1.3的SecondaryNameNode Web界面JS文件
+vim $HADOOP_HOME/share/hadoop/hdfs/webapps/static/dfs-dust.js
+
+# 修改第61行
+# 原内容：
+return moment(Number(v)).format('ddd MMM DD HH:mm:ss ZZ YYYY');
+
+# 改为：
+return new Date(Number(v)).toLocaleString();
+```
+
+### 5.3 解决Hadoop内置库加载问题
+
+#### 解决OpenSSL库加载问题
+```bash
+# 创建libcrypto.so符号链接
+cd /usr/lib64
+ln -s libcrypto.so.1.0.2k libcrypto.so
+```
+
+#### 解决zstd库加载问题
+```bash
+# 安装libzstd库
+yum install epel-release.noarch -y
+yum install libzstd.x86_64 -y
+```
+
+### 5.4 检查本地库
+```bash
+# 检查Hadoop本地库
+hadoop checknative
+
+# 期望输出：
+# Native library checking:
+# hadoop: true /usr/local/hadoop/lib/native/libhadoop.so.1.0.0
+# zlib: true /lib64/libz.so.1
+# zstd: true /lib64/libzstd.so.1
+# ...
+```
+
+## 6. 测试Hadoop集群
+
+### 6.1 创建测试目录
+```bash
+# 创建HDFS目录
+hdfs dfs -mkdir -p /test/input
+
+# 创建本地测试文件
+echo "Hello Hadoop" > test.txt
+echo "Hadoop Cluster" >> test.txt
+```
+
+### 6.2 上传文件到HDFS
+```bash
+hdfs dfs -put test.txt /test/input/
+hdfs dfs -ls /test/input
+```
+
+### 6.3 运行MapReduce测试
+```bash
+# 运行WordCount示例
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.1.3.jar wordcount /test/input /test/output
+
+# 查看结果
+hdfs dfs -cat /test/output/part-r-00000
+```
+
+## 7. 集群管理命令
+
+### 7.1 启动/停止集群
+```bash
+# 单独启动
+start-dfs.sh      # 启动HDFS
+start-yarn.sh     # 启动YARN
+
+# 单独停止
+stop-dfs.sh       # 停止HDFS
+stop-yarn.sh      # 停止YARN
+
+# 快速重启（master节点）
+stop-all.sh
+start-all.sh
+```
+
+### 7.2 查看Web界面
+- **NameNode**: http://master:50070
+- **ResourceManager**: http://master:8088
+- **SecondaryNameNode**: http://master:50090
+- **JobHistory**: http://master:19888
+
+### 7.3 日志查看
+```bash
+# HDFS日志
+tail -f $HADOOP_HOME/logs/hadoop-root-namenode-master.log
+
+# YARN日志
+tail -f $HADOOP_HOME/logs/yarn-root-resourcemanager-master.log
+
+# DataNode日志
+tail -f $HADOOP_HOME/logs/hadoop-root-datanode-slave1.log
+```

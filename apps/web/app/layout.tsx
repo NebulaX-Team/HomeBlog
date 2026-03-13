@@ -5,6 +5,8 @@ import '@homeblog/ui/styles.css';
 import '@homeblog/rich-text-renderer/styles.css';
 import type { ReactNode } from 'react';
 import { VisitTracker } from '@homeblog/ui/client';
+import { GlobalTopBar } from './GlobalTopBar';
+import { GlobalRouteTransition } from './GlobalRouteTransition';
 
 export const metadata = {
   title: 'HomeBlog',
@@ -32,6 +34,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <VisitTracker />
+        <GlobalTopBar />
+        <GlobalRouteTransition />
         {children}
       </body>
     </html>

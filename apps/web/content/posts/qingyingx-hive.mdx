@@ -1,0 +1,303 @@
+---
+title: Hive 搭建教程
+date: 2025-04-01
+summary: "QingYingX-Hive"
+tags:
+  - Apache
+  - Hive
+---
+
+# Apache Hive 安装配置教程
+
+## 1. 前置依赖
+- Hadoop 集群（已安装并正常运行）
+- MySQL 数据库（5.7或8.0版本）
+- Hive 安装包（下载对应版本）
+
+## 2. 环境准备
+
+### 2.1 创建Hive数据库和用户
+```sql
+-- 登录MySQL
+mysql -u root -p
+
+-- 创建Hive元数据库
+CREATE DATABASE hive CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+-- 创建Hive用户并授权
+CREATE USER 'hive'@'%' IDENTIFIED BY 'hive123';
+GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'%';
+FLUSH PRIVILEGES;
+```
+
+## 3. Hive安装配置
+
+### 3.1 解压安装包
+```bash
+# 解压Hive安装包（以3.1.2版本为例）
+tar -zxvf apache-hive-3.1.2-bin.tar.gz -C /root/software/
+mv apache-hive-3.1.2-bin hive
+```
+
+### 3.2 配置环境变量
+```bash
+# 编辑环境变量配置文件
+vim /etc/profile
+
+# 添加以下内容
+export HIVE_HOME=/root/software/hive
+export PATH=$PATH:$HIVE_HOME/bin
+
+# 使配置生效
+source /etc/profile
+```
+
+### 3.3 更新Guava依赖
+```bash
+# 删除Hive原有的旧版本Guava（重要！）
+rm -f $HIVE_HOME/lib/guava-*.jar
+
+# 复制Hadoop的Guava库到Hive
+cp $HADOOP_HOME/share/hadoop/common/lib/guava-27.0-jre.jar $HIVE_HOME/lib/
+```
+
+### 3.4 配置MySQL驱动
+```bash
+# 将MySQL驱动jar包放入hive/lib目录
+cp mysql-connector-java-8.0.28.jar $HIVE_HOME/lib/
+```
+
+## 4. 核心配置文件
+
+### 4.1 创建hive-site.xml
+```bash
+cd $HIVE_HOME/conf
+vim hive-site.xml
+```
+
+添加以下内容：
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+    <!-- MySQL连接配置 -->
+    <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>hive</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionPassword</name>
+        <value>hive123</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:mysql://master:3306/hive?createDatabaseIfNotExist=true&amp;useSSL=false</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriverName</name>
+        <value>com.mysql.jdbc.Driver</value>
+    </property>
+
+    <!-- Hive元数据配置 -->
+    <property>
+        <name>hive.metastore.schema.verification</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hive.metastore.warehouse.dir</name>
+        <value>/hive</value>
+    </property>
+
+    <!-- Hiveserver2配置 -->
+    <property>
+        <name>hive.server2.thrift.bind.host</name>
+        <value>master</value>
+    </property>
+    <property>
+        <name>hive.server2.thrift.port</name>
+        <value>10000</value>
+    </property>
+</configuration>
+```
+
+### 4.2 配置独立Metastore服务（可选）
+如需使用独立Metastore服务，在hive-site.xml中添加：
+```xml
+<property>
+    <name>hive.metastore.uris</name>
+    <value>thrift://master:9083</value>
+</property>
+```
+
+## 5. Hadoop配置
+
+### 5.1 创建HDFS目录
+```bash
+# 创建Hive仓库目录
+hdfs dfs -mkdir -p /hive
+hdfs dfs -chmod g+w /hive
+
+# 创建临时目录
+hdfs dfs -mkdir -p /tmp
+hdfs dfs -chmod g+w /tmp
+```
+
+### 5.2 配置代理用户（Hiveserver2需要）
+在core-site.xml中添加：
+```xml
+<property>
+    <name>hadoop.proxyuser.root.hosts</name>
+    <value>*</value>
+</property>
+<property>
+    <name>hadoop.proxyuser.root.users</name>
+    <value>*</value>
+</property>
+```
+
+重启Hadoop服务：
+```bash
+stop-all.sh
+start-all.sh
+```
+
+## 6. 服务初始化和启动
+
+### 6.1 初始化元数据库
+```bash
+# 初始化Hive元数据库
+schematool -initSchema -dbType mysql
+
+# 验证初始化成功
+mysql -u hive -p -e "USE hive; SHOW TABLES;"
+```
+
+### 6.2 启动Metastore服务
+```bash
+# 方式1：前台启动（测试用）
+hive --service metastore
+
+# 方式2：后台启动
+nohup hive --service metastore > $HIVE_HOME/metastore.log 2>&1 &
+```
+
+### 6.3 启动Hiveserver2服务
+```bash
+# 方式1：前台启动（测试用）
+hive --service hiveserver2
+
+# 方式2：后台启动
+nohup hive --service hiveserver2 > $HIVE_HOME/hiveserver2.log 2>&1 &
+```
+
+### 6.4 验证服务状态
+```bash
+# 检查Metastore服务（端口9083）
+netstat -an | grep 9083
+
+# 检查Hiveserver2服务（端口10000）
+netstat -an | grep 10000
+
+# 查看服务日志
+tail -f $HIVE_HOME/metastore.log
+tail -f $HIVE_HOME/hiveserver2.log
+```
+
+## 7. 基本使用测试
+
+### 7.1 命令行使用
+```bash
+# 启动Hive CLI
+hive
+
+# 执行基本操作
+SHOW DATABASES;
+CREATE DATABASE test;
+USE test;
+CREATE TABLE users (id INT, name STRING);
+SHOW TABLES;
+```
+
+### 7.2 通过Beeline连接
+```bash
+# 连接到Hiveserver2
+beeline -u jdbc:hive2://master:10000 -n root
+
+# 执行SQL
+!connect jdbc:hive2://master:10000
+```
+
+## 8. 常见问题解决
+
+### 8.1 Guava版本冲突
+```bash
+# 确保已更新Guava依赖
+ls $HIVE_HOME/lib/guava*.jar
+ls $HADOOP_HOME/share/hadoop/common/lib/guava*.jar
+```
+
+### 8.2 MySQL连接问题
+```bash
+# 检查MySQL服务状态
+systemctl status mysqld
+
+# 检查防火墙
+systemctl status firewalld
+firewall-cmd --list-ports
+
+# 测试MySQL连接
+mysql -u hive -p -h master
+```
+
+### 8.3 HDFS权限问题
+```bash
+# 检查HDFS目录权限
+hdfs dfs -ls /hive
+hdfs dfs -ls /tmp
+
+# 修复权限
+hdfs dfs -chmod -R 777 /hive
+hdfs dfs -chmod -R 777 /tmp
+```
+
+### 8.4 服务启动失败
+```bash
+# 检查日志文件
+tail -f $HIVE_HOME/metastore.log
+tail -f $HIVE_HOME/hiveserver2.log
+
+# 检查端口占用
+netstat -tlnp | grep 9083
+netstat -tlnp | grep 10000
+
+# 杀死占用进程
+kill -9 <pid>
+```
+
+## 9. 服务管理脚本
+
+### 9.1 创建启动脚本
+```bash
+# 创建metastore启动脚本
+vim $HIVE_HOME/bin/start-metastore.sh
+#!/bin/bash
+nohup hive --service metastore > $HIVE_HOME/metastore.log 2>&1 &
+echo "Metastore started"
+
+# 创建hiveserver2启动脚本
+vim $HIVE_HOME/bin/start-hiveserver2.sh
+#!/bin/bash
+nohup hive --service hiveserver2 > $HIVE_HOME/hiveserver2.log 2>&1 &
+echo "Hiveserver2 started"
+
+# 添加执行权限
+chmod +x $HIVE_HOME/bin/*.sh
+```
+
+### 9.2 停止服务
+```bash
+# 停止Metastore
+pkill -f "metastore"
+
+# 停止Hiveserver2
+pkill -f "hiveserver2"
+```

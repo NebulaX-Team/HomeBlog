@@ -62,6 +62,30 @@
   font-size: 14px;
 }
 
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--hb-card-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--hb-border);
+  border-radius: 999px;
+  border: 2px solid var(--hb-card-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--hb-text);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hb-border) var(--hb-card-bg);
+}
+
 .hb-input,
 .hb-textarea {
   width: 100%;

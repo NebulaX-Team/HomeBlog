@@ -1,0 +1,330 @@
+---
+title: HBase 搭建教程
+date: 2024-04-01
+summary: "QingYingX-HBase"
+tags:
+  - Apache
+  - HBase
+---
+
+# Apache HBase 安装配置教程
+
+## 1. 概述
+Apache HBase是一个开源的、分布式的、版本化的、非关系型数据库，构建在Hadoop之上，提供对大型数据的随机、实时读/写访问。它是Google Bigtable的开源实现。
+
+## 2. 前置依赖
+- Hadoop集群（已安装并运行）
+- ZooKeeper集群（可独立或使用HBase内置）
+- Java 1.8+
+- SSH免密登录配置
+
+## 3. 环境准备
+
+### 3.1 系统要求
+```bash
+# 检查Java版本
+java -version
+
+# 检查Hadoop状态
+hadoop version
+hdfs dfsadmin -report
+
+# 检查SSH免密
+ssh localhost date
+```
+
+### 3.2 下载解压
+```bash
+cd /root/software
+# 解压
+tar -zxvf hbase-2.4.8-bin.tar.gz
+mv hbase-2.4.8 hbase
+```
+
+### 3.3 配置环境变量
+```bash
+# 编辑环境变量
+vim /etc/profile
+
+# 添加以下内容
+export HBASE_HOME=/root/software/hbase
+export PATH=$PATH:$HBASE_HOME/bin
+
+# 使配置生效
+source /etc/profile
+```
+
+## 4. HBase配置
+
+### 4.1 基本配置文件
+```bash
+cd $HBASE_HOME/conf
+
+# 1. 配置hbase-env.sh
+vim hbase-env.sh
+```
+
+修改以下内容：
+```bash
+# 设置Java环境
+export JAVA_HOME=/root/software/jdk8
+
+# 使用外部ZooKeeper
+export HBASE_MANAGES_ZK=false
+
+# HBase日志目录
+export HBASE_LOG_DIR=/root/software/hbase/logs
+
+# HBase PID目录
+export HBASE_PID_DIR=/root/software/hbase/pids
+```
+
+### 4.2 配置hbase-site.xml
+```bash
+vim hbase-site.xml
+```
+
+添加以下配置：
+```xml
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <!-- HBase数据存储目录 -->
+    <property>
+        <name>hbase.rootdir</name>
+        <value>hdfs://master:9000/hbase</value>
+    </property>
+    
+    <!-- HBase运行模式：分布式 -->
+    <property>
+        <name>hbase.cluster.distributed</name>
+        <value>true</value>
+    </property>
+    
+    <!-- ZooKeeper地址 -->
+    <property>
+        <name>hbase.zookeeper.quorum</name>
+        <value>master,slave1,slave2</value>
+    </property>
+    
+    <!-- ZooKeeper数据目录 -->
+    <property>
+        <name>hbase.zookeeper.property.dataDir</name>
+        <value>/opt/zookeeper/data</value>
+    </property>
+    
+    <!-- Master绑定的主机 -->
+    <property>
+        <name>hbase.master</name>
+        <value>master:16000</value>
+    </property>
+    
+    <!-- 启用Web UI -->
+    <property>
+        <name>hbase.master.info.port</name>
+        <value>16010</value>
+    </property>
+    
+    <!-- 开启异步日志 -->
+    <property>
+        <name>hbase.wal.provider</name>
+        <value>filesystem</value>
+    </property>
+</configuration>
+```
+
+### 4.3 配置regionservers
+```bash
+vim regionservers
+
+# 添加RegionServer节点
+slave1
+slave2
+```
+
+## 5. 分发配置到集群
+```bash
+# 在Master节点执行
+scp -r /root/software/hbase slave1:/root/software/
+scp -r /root/software/hbase slave2:/root/software/
+
+# 分发环境变量
+scp /etc/profile slave1:/etc/
+scp /etc/profile slave2:/etc/
+
+# 在从节点生效
+ssh slave1 "source /etc/profile"
+ssh slave2 "source /etc/profile"
+```
+
+## 6. 启动前准备
+
+### 6.1 创建HDFS目录
+```bash
+# 创建HBase在HDFS上的根目录
+hdfs dfs -mkdir -p /hbase
+hdfs dfs -chown hbase:hadoop /hbase
+hdfs dfs -ls /
+```
+
+### 6.2 配置ZooKeeper（如未安装）
+如果使用内置ZooKeeper：
+```bash
+# 修改hbase-env.sh
+export HBASE_MANAGES_ZK=true
+
+# 启动时包括ZooKeeper
+start-hbase.sh
+```
+
+如果使用外部ZooKeeper，确保已安装并启动：
+```bash
+# 检查ZooKeeper状态
+echo stat | nc localhost 2181
+
+# 或使用zkCli.sh
+zkCli.sh -server master:2181
+```
+
+## 7. 启动HBase集群
+
+### 7.1 启动命令
+```bash
+# 在Master节点启动
+start-hbase.sh
+
+# 查看进程
+jps
+# 应看到：HMaster, HQuorumPeer, HRegionServer
+
+# 查看Web UI
+# Master: http://master:16010
+```
+
+### 7.2 检查集群状态
+```bash
+# 进入HBase Shell
+hbase shell
+
+# 查看集群状态
+status
+
+# 查看版本
+version
+
+# 查看表
+list
+```
+
+## 8. HBase Shell基本操作
+
+### 8.1 创建命名空间和表
+```bash
+hbase shell
+
+# 创建命名空间
+create_namespace 'test'
+
+# 创建表（列族cf1）
+create 'test:student', 'cf1', 'cf2'
+
+# 查看表结构
+describe 'test:student'
+```
+
+### 8.2 数据操作
+```bash
+# 插入数据
+put 'test:student', '1001', 'cf1:name', 'Tom'
+put 'test:student', '1001', 'cf1:age', '20'
+put 'test:student', '1001', 'cf2:score', '85'
+
+put 'test:student', '1002', 'cf1:name', 'Jerry'
+put 'test:student', '1002', 'cf1:age', '22'
+
+# 查询数据
+get 'test:student', '1001'
+scan 'test:student'
+
+# 带过滤器的查询
+scan 'test:student', {FILTER => "ValueFilter(=, 'binary:Tom')"}
+
+# 删除数据
+delete 'test:student', '1001', 'cf1:age'
+deleteall 'test:student', '1002'
+```
+
+### 8.3 表管理
+```bash
+# 禁用表
+disable 'test:student'
+
+# 启用表
+enable 'test:student'
+
+# 删除表
+disable 'test:student'
+drop 'test:student'
+
+# 清空表
+truncate 'test:student'
+```
+
+## 9. 集群管理
+
+### 9.1 启动/停止
+```bash
+# 启动集群
+start-hbase.sh
+
+# 停止集群
+stop-hbase.sh
+
+# 单独启动Master
+hbase-daemon.sh start master
+
+# 单独启动RegionServer
+hbase-daemon.sh start regionserver
+```
+
+### 9.2 监控命令
+```bash
+# 查看RegionServer状态
+hbase hbck
+
+# 查看表Region分布
+hbase hbck -details
+
+# 均衡Region
+balance_switch true
+hbase balancer
+```
+
+### 9.3 日志查看
+```bash
+# Master日志
+tail -f $HBASE_HOME/logs/hbase-root-master-master.log
+
+# RegionServer日志
+tail -f $HBASE_HOME/logs/hbase-root-regionserver-slave1.log
+
+# ZooKeeper日志
+tail -f $HBASE_HOME/logs/hbase-root-zookeeper-master.log
+```
+
+## 10. 与Hadoop集成
+
+### 10.1 配置Hadoop Classpath
+```bash
+# 编辑hbase-env.sh
+export HBASE_CLASSPATH=$HADOOP_HOME/etc/hadoop
+```
+
+### 10.2 MapReduce集成
+```bash
+# 创建Hadoop作业，使用HBase作为输入/输出
+hbase org.apache.hadoop.hbase.mapreduce.ImportTsv 
+  -Dimporttsv.columns=HBASE_ROW_KEY,cf1:name,cf1:age 
+  test:student 
+  /input/data.tsv
+```

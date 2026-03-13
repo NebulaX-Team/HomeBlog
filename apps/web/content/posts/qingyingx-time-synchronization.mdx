@@ -1,0 +1,190 @@
+---
+title: 时间同步
+date: 2025-04-01
+summary: "QingYingX-Time_Synchronization"
+tags:
+  - Chronyc
+---
+
+# Chronyd时间同步配置教程（CentOS 7.9）
+
+## 1. 环境说明
+- 操作系统：CentOS 7.9
+- 时间同步服务：chronyd
+- 服务器端IP：192.168.1.101
+- 客户端IP段：192.168.1.0/24
+
+## 2. 服务器端配置
+
+### 2.1 安装chronyd服务
+```bash
+# 检查是否已安装
+rpm -qa | grep chrony
+
+# 如果未安装，则安装
+yum install -y chrony
+```
+
+### 2.2 配置chronyd服务
+```bash
+# 编辑chrony配置文件
+vim /etc/chrony.conf
+```
+
+修改以下内容：
+```bash
+# 注释掉默认的时间服务器
+#server 0.centos.pool.ntp.org iburst
+#server 1.centos.pool.ntp.org iburst
+#server 2.centos.pool.ntp.org iburst
+#server 3.centos.pool.ntp.org iburst
+
+# 添加本地服务器地址（允许客户端同步）
+server 192.168.1.101 iburst
+
+# 允许指定网段同步
+allow 192.168.1.0/24
+```
+
+### 2.3 重启并启用服务
+```bash
+# 重启chronyd服务
+systemctl restart chronyd
+
+# 设置开机自启
+systemctl enable chronyd
+
+# 查看服务状态
+systemctl status chronyd
+```
+
+## 3. 客户端配置
+
+### 3.1 安装chronyd服务
+```bash
+yum install -y chrony
+```
+
+### 3.2 配置chronyd服务
+```bash
+vim /etc/chrony.conf
+```
+
+修改以下内容：
+```bash
+# 注释掉默认的时间服务器
+#server 0.centos.pool.ntp.org iburst
+#server 1.centos.pool.ntp.org iburst
+#server 2.centos.pool.ntp.org iburst
+#server 3.centos.pool.ntp.org iburst
+
+# 添加时间服务器地址
+server 192.168.1.101 iburst
+```
+
+### 3.3 重启并启用服务
+```bash
+# 重启chronyd服务
+systemctl restart chronyd
+
+# 设置开机自启
+systemctl enable chronyd
+
+# 查看服务状态
+systemctl status chronyd
+```
+
+## 4. 验证与监控
+
+### 4.1 服务器端检查
+```bash
+# 查看客户端连接情况
+chronyc clients
+
+# 预期输出：
+# Hostname                      NTP   Drop Int IntL Last     Cmd   Drop Int  Last
+# ===============================================================================
+# client-hostname               0      0   6   -    33       0      0   -     -
+```
+
+### 4.2 客户端检查
+```bash
+# 查看时间源状态
+chronyc sources
+
+# 查看详细的时间源信息
+chronyc sources -v
+
+# 查看时间同步状态
+chronyc tracking
+
+# 手动同步时间
+chronyc -a makestep
+```
+
+### 4.3 检查系统时间
+```bash
+# 查看当前系统时间
+date
+
+# 查看硬件时间
+hwclock
+
+# 对比系统时间与硬件时间
+timedatectl
+```
+
+## 5. 常用命令
+
+### 5.1 时间相关命令
+```bash
+# 查看时区
+timedatectl | grep "Time zone"
+
+# 设置时区（如设置为上海时区）
+timedatectl set-timezone Asia/Shanghai
+
+# 查看所有时区
+timedatectl list-timezones
+```
+
+### 5.2 chronyc管理命令
+```bash
+# 查看帮助
+chronyc --help
+
+# 检查时间源状态
+chronyc sourcestats
+
+# 查看活动连接
+chronyc activity
+
+# 查看等待应答的NTP服务器
+chronyc ntpdata
+
+# 手动同步时间
+chronyc -a makestep
+
+# 强制同步时间
+chronyc -a "burst 4/4"
+```
+
+## 6. 故障排查
+
+### 6.1 常见问题
+```bash
+# 1. 服务启动失败
+systemctl status chronyd
+journalctl -xe
+
+# 2. 时间无法同步
+# 检查网络连接
+ping 192.168.1.101
+
+# 检查防火墙
+systemctl status firewalld
+firewall-cmd --list-all
+
+# 3. 时区不正确
+timedatectl set-timezone Asia/Shanghai
+```

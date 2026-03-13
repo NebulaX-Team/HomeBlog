@@ -57,7 +57,8 @@ export function createRemarkPlugins(options: RendererPluginOptions): PluggableLi
 }
 
 export function createRehypePlugins(options: RendererPluginOptions): PluggableList {
-  const theme = options.highlighterTheme || 'github-light';
+  const theme =
+    options.highlighterTheme || ({ light: 'github-light', dark: 'github-dark' } as const);
 
   const plugins: PluggableList = [
     [

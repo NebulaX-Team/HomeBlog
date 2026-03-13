@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { siteConfig } from '../../../site.config';
-import { QuoteCard, ThemeToggle, TimeCard } from '@homeblog/ui/client';
+import { QuoteCard, TimeCard } from '@homeblog/ui/client';
 import { Github, Mail } from 'lucide-react';
 
 export default function HomePage() {
@@ -33,9 +33,6 @@ export default function HomePage() {
         } as CSSProperties
       }
     >
-      <div className="hub-controls">
-        <ThemeToggle />
-      </div>
       <section className="hub-layout">
         <div className="hub-left">
           <div className="hub-profile">
