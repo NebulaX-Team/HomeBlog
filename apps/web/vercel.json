@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && npm install --no-audit --no-fund",
+  "buildCommand": "cd ../.. && npm run build -w apps/web",
+  "outputDirectory": ".next"
+}
