@@ -11,8 +11,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@homeblog/ui": "file:../../packages/ui",
     "@homeblog/rich-text-renderer": "file:../../packages/rich-text-renderer",
+    "@homeblog/ui": "file:../../packages/ui",
+    "@mdxeditor/editor": "^3.52.4",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.536.0",
     "next": "latest",

@@ -7,9 +7,10 @@ import { Textarea } from './Textarea';
 
 type ConfigEditorProps = {
   initialConfig: unknown;
+  codeThemeOptions?: { value: string; label: string }[];
 };
 
-export function ConfigEditor({ initialConfig }: ConfigEditorProps) {
+export function ConfigEditor({ initialConfig, codeThemeOptions = [] }: ConfigEditorProps) {
   const initialState = useMemo(
     () => JSON.parse(JSON.stringify(initialConfig ?? {})) as any,
     [initialConfig]
@@ -218,6 +219,16 @@ export function ConfigEditor({ initialConfig }: ConfigEditorProps) {
               placeholder="@homeblog/theme-pack"
             />
           </label>
+          {codeThemeOptions.length ? (
+            <label className="form-field">
+              <span>代码高亮主题</span>
+              <Select
+                value={config?.codeTheme ?? 'github'}
+                options={codeThemeOptions}
+                onChange={(value) => updateRoot('codeTheme', value)}
+              />
+            </label>
+          ) : null}
           <label className="form-field">
             <span>圆角半径</span>
             <Input

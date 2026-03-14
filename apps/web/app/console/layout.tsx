@@ -8,7 +8,7 @@ const titleMap: Record<string, string> = {
   '/console/site': '站点配置',
   '/console/theme': '主题管理',
   '/console/content': '内容管线',
-  '/console/editor': '文章编辑器'
+  '/console/editor': '文章列表'
 };
 
 function resolveTitle(pathname: string) {
@@ -31,7 +31,7 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
           <Link href="/console/site">站点配置</Link>
           <Link href="/console/theme">主题管理</Link>
           <Link href="/console/content">内容管线</Link>
-          <Link href="/console/editor">文章编辑器</Link>
+          <Link href="/console/editor">文章列表</Link>
         </nav>
       </aside>
       <div className="console-content">

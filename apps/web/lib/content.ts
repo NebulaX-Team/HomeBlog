@@ -45,6 +45,11 @@ function normalizeDate(value: unknown): string {
 }
 
 export function getAllPosts(): PostMeta[] {
+  return getAllPostsIncludingDrafts().filter((meta) => !meta.draft);
+}
+
+/** 获取所有文章（含草稿），供控制台列表使用 */
+export function getAllPostsIncludingDrafts(): PostMeta[] {
   if (!fs.existsSync(postsDir)) return [];
   const files = fs.readdirSync(postsDir).filter((file) => file.endsWith('.mdx'));
   const metas = files.map((file) => {
@@ -53,10 +58,7 @@ export function getAllPosts(): PostMeta[] {
     const { data } = matter(raw);
     return toMeta(slug, data as Record<string, unknown>);
   });
-
-  return metas
-    .filter((meta) => !meta.draft)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return metas.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 export function getPostBySlug(slug: string): PostRecord | null {
@@ -67,4 +69,49 @@ export function getPostBySlug(slug: string): PostRecord | null {
     meta: toMeta(slug, data as Record<string, unknown>),
     content
   };
+}
+
+function slugToFilename(slug: string): string {
+  const safe = slug.replace(/[^a-z0-9-]/gi, '-').replace(/-+/g, '-').toLowerCase();
+  return safe || 'untitled';
+}
+
+function buildFrontmatter(meta: Omit<PostMeta, 'slug'>): string {
+  const lines = [
+    '---',
+    `title: ${JSON.stringify(meta.title)}`,
+    `date: ${meta.date}`,
+    ...(meta.summary ? [`summary: ${JSON.stringify(meta.summary)}`] : []),
+    ...(meta.tags?.length ? [`tags:\n${meta.tags.map((t) => `  - ${t}`).join('\n')}`] : []),
+    ...(meta.draft ? ['draft: true'] : []),
+    '---'
+  ];
+  return lines.join('\n') + '\n';
+}
+
+export function writePost(
+  slug: string,
+  meta: Omit<PostMeta, 'slug'>,
+  content: string
+): { path: string } {
+  if (!fs.existsSync(postsDir)) fs.mkdirSync(postsDir, { recursive: true });
+  const filename = slugToFilename(slug);
+  const fullPath = path.join(postsDir, `${filename}.mdx`);
+  const raw = buildFrontmatter(meta) + content;
+  fs.writeFileSync(fullPath, raw, 'utf8');
+  return { path: fullPath };
+}
+
+export function deletePost(slug: string): boolean {
+  const filename = slugToFilename(slug);
+  const fullPath = path.join(postsDir, `${filename}.mdx`);
+  if (!fs.existsSync(fullPath)) return false;
+  fs.unlinkSync(fullPath);
+  return true;
+}
+
+export function postSlugExists(slug: string): boolean {
+  const filename = slugToFilename(slug);
+  const fullPath = path.join(postsDir, `${filename}.mdx`);
+  return fs.existsSync(fullPath);
 }

@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
 
 const defaultTitles: Record<string, string> = {
-  note: 'Note',
-  tip: 'Tip',
-  warning: 'Warning',
-  info: 'Info'
+  note: '提示',
+  tip: '技巧',
+  info: '信息',
+  caution: '注意',
+  danger: '危险',
+  warning: '警告'
 };
 
 export type CalloutProps = {
-  type?: 'note' | 'tip' | 'warning' | 'info';
+  type?: 'note' | 'tip' | 'info' | 'caution' | 'danger' | 'warning';
   title?: string;
   children?: ReactNode;
 };

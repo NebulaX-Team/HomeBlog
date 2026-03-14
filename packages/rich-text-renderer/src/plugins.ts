@@ -7,12 +7,13 @@ import rehypePrettyCode from 'rehype-pretty-code';
 import rehypeSlug from 'rehype-slug';
 import { visit } from 'unist-util-visit';
 import type { PluggableList } from 'unified';
+import { resolveShikiTheme } from './theme';
 
 export type RendererPluginOptions = {
   enableMermaid?: boolean;
   enableMath?: boolean;
   languages?: string[];
-  highlighterTheme?: string;
+  highlighterTheme?: string | { light: string; dark: string };
 };
 
 const defaultLanguages = [
@@ -57,8 +58,7 @@ export function createRemarkPlugins(options: RendererPluginOptions): PluggableLi
 }
 
 export function createRehypePlugins(options: RendererPluginOptions): PluggableList {
-  const theme =
-    options.highlighterTheme || ({ light: 'github-light', dark: 'github-dark' } as const);
+  const theme = resolveShikiTheme(options.highlighterTheme);
 
   const plugins: PluggableList = [
     [
@@ -116,7 +116,10 @@ function remarkMermaidToMdx() {
   };
 }
 
-const calloutTypes = new Set(['note', 'tip', 'warning', 'info']);
+const calloutTypes = new Set(['note', 'tip', 'info', 'caution', 'danger', 'warning']);
+const calloutAlias: Record<string, string> = {
+  warning: 'caution'
+};
 
 function remarkCalloutDirectives() {
   return (tree: unknown) => {
@@ -124,6 +127,7 @@ function remarkCalloutDirectives() {
       if (!parent || typeof index !== 'number') return;
       if (!node.name || !calloutTypes.has(node.name)) return;
       const title = typeof node.attributes?.title === 'string' ? node.attributes?.title : undefined;
+      const resolvedType = calloutAlias[node.name] ?? node.name;
       parent.children[index] = {
         type: 'mdxJsxFlowElement',
         name: 'Callout',
@@ -131,7 +135,7 @@ function remarkCalloutDirectives() {
           {
             type: 'mdxJsxAttribute',
             name: 'type',
-            value: node.name
+            value: resolvedType
           },
           ...(title
             ? [

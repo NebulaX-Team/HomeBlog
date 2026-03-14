@@ -1,5 +1,6 @@
 export const siteConfig = {
   "activeTheme": "@homeblog/theme-pack",
+  "codeTheme": "github",
   "home": {
     "radius": 8,
     "profile": {

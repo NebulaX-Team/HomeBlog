@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
-import { compileMDX, renderMDX } from '@homeblog/rich-text-renderer';
+import { compileMDX, renderMDX, resolveShikiTheme } from '@homeblog/rich-text-renderer';
 import { Callout, CodeBlock, Mermaid } from '@homeblog/rich-text-renderer/client';
 import { getPostBySlug } from '../../../lib/content';
+import { siteConfig } from '../../../../../site.config';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const compiled = await compileMDX({
     input: record.content,
     enableMermaid: true,
-    enableMath: true
+    enableMath: true,
+    highlighterTheme: resolveShikiTheme(siteConfig.codeTheme)
   });
 
   const content = await renderMDX(compiled, { components: mdxComponents });
